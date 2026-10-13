@@ -1,142 +1,36 @@
-# DermaConnect
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A telemedicine platform connecting dermatology patients with verified specialists. Patients submit skin condition photos and symptoms, book consultation slots, and consult with dermatologists. Doctors review cases, issue prescriptions, and manage their availability.
+## Getting Started
 
-## Status
+First, run the development server:
 
-Early development. Core consultation loop is functional. Video consultations, in-app chat, and payment flows are planned.
-
-## Tech Stack
-
-- **Frontend**: Next.js 16 (App Router), TypeScript, Mantine, Tailwind CSS
-- **Backend**: Self-hosted Supabase (PostgreSQL, GoTrue auth, Storage, Realtime)
-- **Database**: PostgreSQL with Row Level Security on all tables
-- **Auth**: Cookie-based sessions via `@supabase/ssr`
-
-## Features
-
-### Patients
-- Submit skin condition with symptoms and images
-- Browse verified dermatologists by specialization, rating, and fee
-- Book consultation slots
-- View prescriptions and consultation history
-- Maintain medical history (allergies, medications, conditions)
-- Rate and review consultations
-
-### Doctors
-- Dashboard with assigned cases
-- Review patient symptoms, images, and medical history
-- Issue e-prescriptions
-- Manage availability with a slot system
-- View patient ratings
-
-## Architecture
-
-```
-src/
-├── app/
-│   ├── (patient)/          # Patient-only routes (protected)
-│   ├── (doctor)/           # Doctor-only routes (protected)
-│   ├── login/              # Public login
-│   └── api/                # Route handlers
-├── components/
-│   ├── auth/               # Login, sign-out
-│   ├── patient/            # Patient-facing components
-│   └── doctor/             # Doctor-facing components
-├── lib/
-│   ├── supabase/           # Browser + server Supabase clients
-│   └── auth.ts             # Session helpers
-└── middleware.ts           # Route protection and session refresh
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## Local Development
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Prerequisites
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-- Node.js 22+
-- Docker Desktop
-- Git
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### Setup
+## Learn More
 
-1. Clone the repository:
+To learn more about Next.js, take a look at the following resources:
 
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/derma-connect.git
-   cd derma-connect
-   ```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-2. Install dependencies:
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-   ```bash
-   npm install
-   ```
+## Deploy on Vercel
 
-3. Start self-hosted Supabase. Follow the instructions at [supabase.com/docs/guides/self-hosting/docker](https://supabase.com/docs/guides/self-hosting/docker). Then, in the `docker` folder:
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-   ```bash
-   sh utils/generate-keys.sh
-   sh utils/add-new-auth-keys.sh --update-env
-   docker compose up -d
-   ```
-
-4. Configure environment variables. Create `.env.local` at the project root with:
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-   ```
-
-5. Apply the database schema. Run the schema SQL in Supabase Studio at [http://localhost:8000](http://localhost:8000).
-
-6. Run the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000).
-
-## Database Schema
-
-Nine tables with Row Level Security:
-
-- `profiles` — Patient and doctor profiles, shared table with role-based fields
-- `medical_history` — Patient allergies, medications, conditions, surgeries
-- `doctor_slots` — Doctor availability slots
-- `consultations` — Consultation records and status
-- `consultation_images` — References to skin images in Storage
-- `prescriptions` — Issued prescriptions with structured medication data
-- `ratings` — Patient ratings and reviews of doctors
-- `consent_log` — DPDP Act consent records
-- `audit_log` — Access audit trail
-
-## Compliance Notes
-
-This project is being built toward compliance with India's **Digital Personal Data Protection Act (DPDP Act, 2023)** and the **Telemedicine Practice Guidelines (2020)**.
-
-Key considerations:
-
-- Patient data must remain in India (data residency)
-- Consent capture and audit logging are structurally built in
-- Medical records must be preserved for at least 3 years
-- Prescriptions must include doctor registration numbers
-
-## Roadmap
-
-- [x] Patient intake with image upload
-- [x] Doctor catalogue and slot booking
-- [x] Prescription issuance
-- [x] Ratings and reviews
-- [x] Medical history
-- [ ] Video consultations
-- [ ] In-app chat
-- [ ] Email notifications
-- [ ] Doctor verification workflow
-- [ ] Admin panel
-- [ ] Payment integration
-- [ ] Mobile responsive UI
-
-## License
-
-Not yet licensed. All rights reserved.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
