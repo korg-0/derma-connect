@@ -139,4 +139,8 @@ Key considerations:
 
 ## License
 
+<<<<<<< Updated upstream
 Not yet licensed. All rights reserved.
+=======
+Not yet licensed. All rights reserved.
+>>>>>>> Stashed changes

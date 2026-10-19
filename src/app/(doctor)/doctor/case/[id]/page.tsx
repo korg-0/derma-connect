@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import PrescriptionForm from '@/components/doctor/PrescriptionForm';
+import GenerateMeetLink from '@/components/doctor/GenerateMeetLink';
+import ConsultationChat from '@/components/chat/ConsultationChat';
 
 export default async function CaseDetailPage({
   params,
@@ -63,9 +65,7 @@ export default async function CaseDetailPage({
 
   return (
     <div style={{ maxWidth: 900 }}>
-      <Link href="/doctor/dashboard" style={{ color: '#666' }}>
-        ← Back to Cases
-      </Link>
+
 
       <h1 style={{ marginTop: 16 }}>Case: {patient?.full_name}</h1>
       <p style={{ color: '#666', fontSize: 14 }}>
@@ -117,6 +117,26 @@ export default async function CaseDetailPage({
           ))}
         </div>
       </section>
+
+      <section style={{ marginTop: 40 }}>
+  <h2>Communication</h2>
+  <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
+    Send a message to the patient.
+  </p>
+  <ConsultationChat 
+    consultationId={consultation.id} 
+    currentUserId={user.id} 
+  />
+</section>
+
+      <section style={{ marginBottom: 24 }}>
+        <h2>Video Consultation</h2>
+        <GenerateMeetLink 
+          consultationId={consultation.id} 
+          existingLink={consultation.meeting_link} 
+        />
+      </section>
+      
 
       {prescription ? (
         <section>

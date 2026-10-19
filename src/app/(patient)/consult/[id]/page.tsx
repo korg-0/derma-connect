@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import RatingForm from '@/components/patient/RatingForm';
+import ConsultationChat from '@/components/chat/ConsultationChat';
 
 export default async function ConsultationPage({
   params,
@@ -50,6 +51,7 @@ export default async function ConsultationPage({
     .eq('consultation_id', id)
     .maybeSingle();
 
+
   // Check if patient already rated this consultation
 const { data: existingRating } = await supabase
   .from('ratings')
@@ -70,9 +72,6 @@ const { data: existingRating } = await supabase
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <Link href="/dashboard" style={{ color: '#666' }}>
-        ← Back to Dashboard
-      </Link>
 
       <h1 style={{ marginTop: 16 }}>Consultation</h1>
       <p style={{ color: '#666', fontSize: 14 }}>
@@ -150,6 +149,44 @@ const { data: existingRating } = await supabase
           </Link>
         </section>
       )}
+
+      {consultation.meeting_link && (
+        <section style={{ marginBottom: 24 }}>
+          <h2>Video Consultation</h2>
+          <p style={{ color: '#666', fontSize: 14 }}>
+            Your doctor has generated a meeting link for this consultation.
+          </p>
+          <a
+            href={consultation.meeting_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              padding: '12px 24px',
+              background: '#16a34a', // Green button
+              color: 'white',
+              borderRadius: 6,
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Join Google Meet
+          </a>
+        </section>
+      )}
+
+        {consultation.doctor_id && (
+  <section style={{ marginTop: 40 }}>
+    <h2>Communication</h2>
+    <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
+      Send a message to your dermatologist.
+    </p>
+    <ConsultationChat 
+      consultationId={consultation.id} 
+      currentUserId={user.id} 
+    />
+  </section>
+)}
 
       {prescription && (
         <section style={{ marginBottom: 24 }}>
