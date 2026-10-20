@@ -1,3 +1,4 @@
+export const unstable_instant = false;
 import Link from 'next/link';
 import { requireUser, getProfile } from '@/lib/auth';
 

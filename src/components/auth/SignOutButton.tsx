@@ -9,9 +9,10 @@ export default function SignOutButton() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    
+    // Force a full page reload instead of a soft Next.js navigation
+    window.location.href = '/login'; 
   };
 
-  return <button onClick={handleSignOut}>Sign Out</button>;
+  return <button onClick={handleSignOut} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 'inherit' }}>Sign Out</button>;
 }

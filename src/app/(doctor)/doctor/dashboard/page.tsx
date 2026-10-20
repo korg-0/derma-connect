@@ -1,3 +1,5 @@
+export const unstable_instant = false;
+
 import Link from 'next/link';
 import { requireUser, getProfile } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -13,6 +15,15 @@ export default async function DoctorDashboard() {
 
   return (
     <div style={{ maxWidth: 800 }}>
+            {profile && !profile.verified && (
+        <div style={{ padding: 16, background: '#fef3c7', borderRadius: 8, marginBottom: 24, border: '1px solid #f59e0b' }}>
+          <strong>Status: Pending Verification</strong>
+          <p style={{ margin: '8px 0 0', fontSize: 14 }}>
+            Your account is currently under review. You will not appear in the patient catalogue until an administrator approves your profile. 
+            Please ensure your <a href="/doctor/profile" style={{ color: '#0070f3', textDecoration: 'underline' }}>Professional Profile</a> is complete.
+          </p>
+        </div>
+      )}
       <h1 style={{ fontSize: 32, marginBottom: 8 }}>Welcome, Dr. {profile?.full_name || 'Doctor'}.</h1>
       <p style={{ fontSize: 18, color: '#666', marginBottom: 40 }}>Here is an overview of your practice today.</p>
 

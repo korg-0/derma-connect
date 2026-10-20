@@ -1,4 +1,3 @@
-export const unstable_instant = false;
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -7,12 +6,14 @@ import { createClient } from '@/lib/supabase/server';
 import PrescriptionForm from '@/components/doctor/PrescriptionForm';
 import GenerateMeetLink from '@/components/doctor/GenerateMeetLink';
 import ConsultationChat from '@/components/chat/ConsultationChat';
+import { CancelPrescriptionButton, CancelConsultationButton } from '@/components/doctor/CancelActions';
 
 export default async function CaseDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+
   const { id } = await params;
   const user = await requireUser();
   const supabase = await createClient();
@@ -32,7 +33,7 @@ export default async function CaseDetailPage({
     .from('profiles')
     .select('id, full_name, date_of_birth, gender, email, phone')
     .eq('id', consultation.patient_id)
-    .single();
+    .maybeSingle();
 
   // Medical history
   const { data: history } = await supabase
@@ -61,6 +62,7 @@ export default async function CaseDetailPage({
     .from('prescriptions')
     .select('*')
     .eq('consultation_id', id)
+    .eq('status', 'active')
     .maybeSingle();
 
   return (
@@ -138,9 +140,10 @@ export default async function CaseDetailPage({
       </section>
       
 
-      {prescription ? (
-        <section>
-          <h2>Prescription (Issued)</h2>
+                  {/* If a prescription exists AND it is active, show it. */}
+      {prescription && prescription.status === 'active' && (
+        <section style={{ marginBottom: 24 }}>
+          <h2>Prescription</h2>
           <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 6 }}>
             <ul>
               {(prescription.medications as any[]).map((med, i) => (
@@ -150,11 +153,21 @@ export default async function CaseDetailPage({
               ))}
             </ul>
             {prescription.instructions && <p><strong>Instructions:</strong> {prescription.instructions}</p>}
+            
+            <CancelPrescriptionButton prescriptionId={prescription.id} consultationId={id} />
           </div>
         </section>
-      ) : (
-        <section>
-          <h2>Issue Prescription</h2>
+      )}
+
+      {/* If there is NO prescription, OR if the existing one is cancelled, show the form. */}
+      {(!prescription || prescription.status === 'cancelled') && (
+        <section style={{ marginBottom: 24 }}>
+          <h2>{prescription?.status === 'cancelled' ? 'Prescription Cancelled - Issue New' : 'Issue Prescription'}</h2>
+          {prescription?.status === 'cancelled' && (
+            <p style={{ color: '#991b1b', marginBottom: 16, fontSize: 14 }}>
+              The previous prescription has been cancelled and marked void in the medical record. You can issue a new one below.
+            </p>
+          )}
           <PrescriptionForm
             consultationId={id}
             doctorId={user.id}
@@ -162,6 +175,13 @@ export default async function CaseDetailPage({
           />
         </section>
       )}
+            <section style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
+        <h2 style={{ color: '#991b1b' }}>Actions</h2>
+        <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
+          Cancel this consultation if the patient did not show up or if the appointment is no longer needed.
+        </p>
+        <CancelConsultationButton consultationId={consultation.id} />
+      </section>
     </div>
   );
 }

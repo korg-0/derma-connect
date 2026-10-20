@@ -19,7 +19,8 @@
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-dropzone": "^20.1.2"
+    "react-dropzone": "^20.1.2",
+    "resend": "^6.34.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

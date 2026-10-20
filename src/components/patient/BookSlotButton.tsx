@@ -18,7 +18,7 @@ export default function BookSlotButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleBook = async () => {
+    const handleBook = async () => {
     setError(null);
     setLoading(true);
 
@@ -34,7 +34,7 @@ export default function BookSlotButton({
       return;
     }
 
-    // 2. Update consultation with doctor and slot, set status to scheduled
+    // 2. Update consultation
     const { error: consultError } = await supabase
       .from('consultations')
       .update({
@@ -50,7 +50,29 @@ export default function BookSlotButton({
       return;
     }
 
-    // 3. Redirect to the consultation view
+    // 3. Send Email Notification
+    try {
+      // Fetch doctor and patient details for the email
+      const { data: doctor } = await supabase.from('profiles').select('full_name, email').eq('id', doctorId).single();
+      const { data: patient } = await supabase.from('profiles').select('full_name').eq('id', (await supabase.auth.getUser()).data.user?.id).single();
+
+      if (doctor && patient) {
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'booking',
+            to: doctor.email,
+            doctorName: doctor.full_name,
+            patientName: patient.full_name,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to trigger email:', err);
+    }
+
+    // 4. Redirect
     router.push(`/consult/${consultationId}`);
     router.refresh();
   };

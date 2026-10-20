@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useEffect } from 'react';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -11,6 +12,11 @@ export default function LoginForm() {
   const [password, setPassword] = useState('TestPass123!');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+    // Ensure the loading state is reset when the page mounts
+    setLoading(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -64,6 +70,9 @@ export default function LoginForm() {
         {loading ? 'Signing in...' : 'Sign In'}
       </button>
       {error && <p style={{ color: 'red', marginTop: 12 }}>{error}</p>}
+              <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14, color: '#666' }}>
+          Don't have an account? <a href="/signup" style={{ color: '#0070f3', textDecoration: 'none' }}>Sign up</a>
+        </p>
     </form>
   );
 }

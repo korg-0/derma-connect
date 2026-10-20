@@ -59,6 +59,7 @@ export default function PrescriptionForm({
       if (prescError) throw new Error(prescError.message);
 
       // 2. Update consultation status to completed + save diagnosis
+            // 2. Update consultation status to completed + save diagnosis
       const { error: consultError } = await supabase
         .from('consultations')
         .update({
@@ -69,6 +70,32 @@ export default function PrescriptionForm({
         .eq('id', consultationId);
 
       if (consultError) throw new Error(consultError.message);
+
+      // 3. Send Email Notification to Patient
+      try {
+        // Change to maybeSingle()
+        const { data: patient } = await supabase.from('profiles').select('full_name, email').eq('id', patientId).maybeSingle();
+        const { data: doctor } = await supabase.from('profiles').select('full_name').eq('id', doctorId).maybeSingle();
+
+        if (patient && patient.email && doctor) {
+          console.log("Sending email to:", patient.email); // Debug log
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'prescription',
+              to: patient.email,
+              doctorName: doctor.full_name,
+              patientName: patient.full_name,
+              consultationUrl: `${window.location.origin}/consult/${consultationId}`,
+            }),
+          });
+        } else {
+          console.error("Missing patient or doctor data for email", { patient, doctor });
+        }
+      } catch (err) {
+        console.error('Failed to trigger prescription email:', err);
+      }
 
       router.refresh();
     } catch (err: any) {

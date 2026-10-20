@@ -8,17 +8,19 @@ export default function Sidebar({ role }: { role: 'patient' | 'doctor' }) {
   const pathname = usePathname();
 
   const patientLinks = [
-    { name: 'Home', href: '/dashboard', icon: '🏠' },
-    { name: 'Messages', href: '/messages', icon: '💬' },
-    { name: 'My Consultations', href: '/consult/history', icon: '📋' },
-    { name: 'Find Doctors', href: '/doctors', icon: '🔍' },
-    { name: 'Medical History', href: '/profile/history', icon: '🩺' },
+    { name: 'Home', href: '/dashboard' },
+    { name: 'Messages', href: '/messages' },
+    { name: 'My Consultations', href: '/consult/history' },
+    { name: 'Find Doctors', href: '/doctors' },
+    { name: 'Medical History', href: '/profile/history' },
   ];
 
   const doctorLinks = [
-    { name: 'Dashboard', href: '/doctor/dashboard', icon: '🏠' },
-    { name: 'Messages', href: '/messages', icon: '💬' },
-    { name: 'Availability', href: '/doctor/availability', icon: '📅' },
+    { name: 'Dashboard', href: '/doctor/dashboard' },
+    { name: 'My Profile', href: '/doctor/profile' },
+    { name: 'My Cases', href: '/doctor/dashboard/cases'},
+    { name: 'Messages', href: '/messages' },
+    { name: 'Availability', href: '/doctor/availability' },
   ];
 
   const links = role === 'patient' ? patientLinks : doctorLinks;
