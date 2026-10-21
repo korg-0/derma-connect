@@ -1,4 +1,3 @@
-export const unstable_instant = false;
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';

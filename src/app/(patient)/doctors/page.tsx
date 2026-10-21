@@ -1,4 +1,3 @@
-export const unstable_instant = false;
 
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import LegalConsent from '@/components/legal/LegalConsent';
 
 export default function SkinIntakeForm({ patientId }: { patientId: string }) {
   const router = useRouter();
@@ -11,7 +12,6 @@ export default function SkinIntakeForm({ patientId }: { patientId: string }) {
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [consentGiven, setConsentGiven] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,8 +24,10 @@ export default function SkinIntakeForm({ patientId }: { patientId: string }) {
       setError('You must agree to the Privacy Policy and provide consent before submitting.');
       return;
     }
+    
     setSubmitting(true);
     try {
+      // 1. Create the consultation
       const { data: consultation, error: consultError } = await supabase
         .from('consultations')
         .insert({ patient_id: patientId, symptoms_text: symptoms, status: 'pending' })
@@ -36,6 +38,7 @@ export default function SkinIntakeForm({ patientId }: { patientId: string }) {
 
       const consultationId = consultation.id;
 
+      // 2. Upload images
       for (const file of files) {
         const ext = file.name.split('.').pop();
         const storagePath = `${patientId}/${consultationId}/${crypto.randomUUID()}.${ext}`;
@@ -53,16 +56,18 @@ export default function SkinIntakeForm({ patientId }: { patientId: string }) {
         if (imageError) throw new Error(imageError.message);
       }
 
+      // 3. Log Consent
       try {
-      await fetch('/api/consent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'health_data_processing', version: '1.0' }),
-      });
-    } catch (err) {
-      console.error('Failed to log consent:', err);
-    }
+        await fetch('/api/consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'health_data_processing', version: '1.0' }),
+        });
+      } catch (err) {
+        console.error('Failed to log consent:', err);
+      }
 
+      // 4. Redirect
       router.push(`/consult/${consultationId}`);
       router.refresh();
     } catch (err: any) {
@@ -82,39 +87,29 @@ export default function SkinIntakeForm({ patientId }: { patientId: string }) {
         onChange={(e) => setSymptoms(e.target.value)}
         placeholder="Describe what you're experiencing..."
         rows={5}
-        style={{ width: '100%', padding: 8, marginBottom: 16 }}
+        style={{ width: '100%', padding: 8, marginBottom: 16, border: '1px solid #d1d5db', borderRadius: 6 }}
       />
 
       <label style={{ display: 'block', marginBottom: 8 }}>Upload Photos (max 5)</label>
       <input type="file" accept="image/*" multiple onChange={handleFileChange} />
-      <p style={{ fontSize: 12, color: '#666' }}>Use good lighting, keep the area in focus.</p>
+      <p style={{ fontSize: 12, color: '#666', marginBottom: 24 }}>Use good lighting, keep the area in focus.</p>
 
-            {/* Add this block right before the <button> */}
-      <div style={{ marginTop: 24, marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <input 
-          type="checkbox" 
-          id="consent" 
-          checked={consentGiven} 
-          onChange={(e) => setConsentGiven(e.target.checked)}
-          style={{ marginTop: 4, width: 16, height: 16 }}
-        />
-        <label htmlFor="consent" style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.4 }}>
-          I consent to DermaConnect processing my medical images and health data for the purpose of this consultation. I have read the <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#0070f3', textDecoration: 'underline' }}>Privacy Policy</a>.
-        </label>
-      </div>
+      {/* The Legal Consent Checkbox */}
+      <LegalConsent context="consultation" onConsentChange={setConsentGiven} />
 
-            <button
+      <button
         onClick={handleSubmit}
-        disabled={!symptoms.trim() || files.length === 0 || submitting}
+        disabled={!symptoms.trim() || files.length === 0 || submitting || !consentGiven}
         style={{ 
-          padding: '10px 20px', 
-          // Make it visually clear it's disabled if consent isn't given, but still clickable to show the error
-          background: (!symptoms.trim() || files.length === 0) ? '#ccc' : (consentGiven ? '#0070f3' : '#f59e0b'), 
+          padding: '12px 20px', 
+          background: (!symptoms.trim() || files.length === 0 || !consentGiven) ? '#ccc' : '#0070f3', 
           color: 'white', 
           border: 'none', 
           borderRadius: 6, 
           width: '100%',
-          cursor: (!symptoms.trim() || files.length === 0 || submitting) ? 'not-allowed' : 'pointer'
+          fontSize: 16,
+          fontWeight: 500,
+          cursor: (!symptoms.trim() || files.length === 0 || submitting || !consentGiven) ? 'not-allowed' : 'pointer'
         }}
       >
         {submitting ? 'Submitting...' : 'Submit for Review'}

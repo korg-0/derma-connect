@@ -1,4 +1,3 @@
-export const unstable_instant = false;
 
 import { createClient } from '@/lib/supabase/server';
 import VerifyDoctorButton from '@/components/admin/VerifyDoctorButton';

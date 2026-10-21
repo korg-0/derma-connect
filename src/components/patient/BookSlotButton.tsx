@@ -18,29 +18,17 @@ export default function BookSlotButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    const handleBook = async () => {
+  const handleBook = async () => {
     setError(null);
     setLoading(true);
 
-    // 1. Mark slot as booked
-    const { error: slotError } = await supabase
-      .from('doctor_slots')
-      .update({ is_booked: true })
-      .eq('id', slotId);
-
-    if (slotError) {
-      setError(slotError.message);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Update consultation
+    // 1. Update consultation to pending_approval (DO NOT mark slot as booked yet)
     const { error: consultError } = await supabase
       .from('consultations')
       .update({
         doctor_id: doctorId,
         slot_id: slotId,
-        status: 'scheduled',
+        status: 'pending_approval',
       })
       .eq('id', consultationId);
 
@@ -50,18 +38,17 @@ export default function BookSlotButton({
       return;
     }
 
-    // 3. Send Email Notification
+    // 2. Send Email Notification to Doctor
     try {
-      // Fetch doctor and patient details for the email
-      const { data: doctor } = await supabase.from('profiles').select('full_name, email').eq('id', doctorId).single();
-      const { data: patient } = await supabase.from('profiles').select('full_name').eq('id', (await supabase.auth.getUser()).data.user?.id).single();
+      const { data: doctor } = await supabase.from('profiles').select('full_name, email').eq('id', doctorId).maybeSingle();
+      const { data: patient } = await supabase.from('profiles').select('full_name').eq('id', (await supabase.auth.getUser()).data.user?.id).maybeSingle();
 
-      if (doctor && patient) {
+      if (doctor && patient && doctor.email) {
         await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'booking',
+            type: 'booking_request', // Changed from 'booking' to 'booking_request'
             to: doctor.email,
             doctorName: doctor.full_name,
             patientName: patient.full_name,
@@ -72,7 +59,7 @@ export default function BookSlotButton({
       console.error('Failed to trigger email:', err);
     }
 
-    // 4. Redirect
+    // 3. Redirect to the consultation view so the patient sees "Awaiting Approval"
     router.push(`/consult/${consultationId}`);
     router.refresh();
   };
@@ -84,14 +71,15 @@ export default function BookSlotButton({
         disabled={loading}
         style={{
           padding: '8px 16px',
-          background: '#0070f3',
+          background: '#f59e0b', // Changed to orange to signify a "Request"
           color: 'white',
           border: 'none',
           borderRadius: 6,
           cursor: loading ? 'wait' : 'pointer',
+          fontWeight: 500
         }}
       >
-        {loading ? 'Booking...' : 'Book'}
+        {loading ? 'Requesting...' : 'Request Slot'}
       </button>
       {error && <p style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{error}</p>}
     </div>

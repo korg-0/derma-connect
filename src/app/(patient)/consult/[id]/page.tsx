@@ -1,5 +1,6 @@
-export const unstable_instant = false;
 
+import RescheduleButton from '@/components/patient/RescheduleButton';
+import MockPaymentButton from '@/components/patient/MockPaymentButton';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
@@ -44,20 +45,20 @@ export default async function ConsultationPage({
     })
   );
 
-  // Fetch prescription if it exists
+  // Fetch active prescription if it exists
   const { data: prescription } = await supabase
     .from('prescriptions')
     .select('*')
     .eq('consultation_id', id)
+    .eq('status', 'active')
     .maybeSingle();
 
-
   // Check if patient already rated this consultation
-const { data: existingRating } = await supabase
-  .from('ratings')
-  .select('id, rating, review_text')
-  .eq('consultation_id', id)
-  .maybeSingle();
+  const { data: existingRating } = await supabase
+    .from('ratings')
+    .select('id, rating, review_text')
+    .eq('consultation_id', id)
+    .maybeSingle();
 
   // Fetch assigned doctor if any
   const doctor = consultation.doctor_id
@@ -72,7 +73,6 @@ const { data: existingRating } = await supabase
 
   return (
     <div style={{ maxWidth: 800 }}>
-
       <h1 style={{ marginTop: 16 }}>Consultation</h1>
       <p style={{ color: '#666', fontSize: 14 }}>
         Case ID: <code>{consultation.id}</code>
@@ -80,14 +80,16 @@ const { data: existingRating } = await supabase
 
       <div
         style={{
-          padding: 12,
+          padding: '6px 12px',
           background: statusColor(consultation.status),
-          borderRadius: 6,
+          borderRadius: 999,
           display: 'inline-block',
-          marginBottom: 20,
+          marginBottom: 24,
+          fontSize: 14,
+          fontWeight: 600
         }}
       >
-        Status: <strong>{consultation.status}</strong>
+        Status: {formatStatus(consultation.status)}
       </div>
 
       <section style={{ marginBottom: 24 }}>
@@ -118,21 +120,69 @@ const { data: existingRating } = await supabase
       </section>
 
       {doctor ? (
-        <section style={{ marginBottom: 24 }}>
-          <h2>Assigned Dermatologist</h2>
-          <p>
+        <section style={{ marginBottom: 24, padding: 20, background: 'white', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+          <h2 style={{ marginTop: 0 }}>Assigned Dermatologist</h2>
+          <p style={{ marginBottom: 16 }}>
             <strong>{doctor.full_name}</strong>
             {doctor.specializations && (
               <span style={{ color: '#666' }}> — {doctor.specializations.join(', ')}</span>
             )}
           </p>
+
+          {/* PAYMENT & APPROVAL STATES */}
+          {consultation.status === 'pending_approval' && (
+            <div style={{ padding: 16, background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8 }}>
+              <h3 style={{ margin: '0 0 8px', color: '#d97706', fontSize: 16 }}>Awaiting Doctor Approval</h3>
+              <p style={{ margin: 0, fontSize: 14 }}>Your request has been sent. You will be able to pay and confirm once the doctor approves it.</p>
+            </div>
+          )}
+
+          {consultation.status === 'approved_awaiting_payment' && (
+            <div style={{ padding: 16, background: '#f0fdf4', border: '1px solid #16a34a', borderRadius: 8 }}>
+              <h3 style={{ margin: '0 0 8px', color: '#16a34a', fontSize: 16 }}>Doctor Approved!</h3>
+              <p style={{ margin: '0 0 16px', fontSize: 14 }}>Please complete your payment within 6 hours to lock in this appointment.</p>
+              <MockPaymentButton consultationId={consultation.id} />
+            </div>
+          )}
+
+          {/* SCHEDULED ACTIONS (Video & Reschedule) */}
+          {consultation.status === 'scheduled' && (
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              {consultation.meeting_link ? (
+                <a
+                  href={consultation.meeting_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    background: '#16a34a',
+                    color: 'white',
+                    borderRadius: 6,
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  Join Video Consultation
+                </a>
+              ) : (
+                <p style={{ color: '#666', fontSize: 14, margin: 0 }}>Waiting for doctor to generate meeting link...</p>
+              )}
+              
+              {consultation.slot_id && (
+                <RescheduleButton 
+                  consultationId={consultation.id} 
+                  oldSlotId={consultation.slot_id} 
+                  doctorId={consultation.doctor_id} 
+                />
+              )}
+            </div>
+          )}
         </section>
       ) : (
-        <section style={{ marginBottom: 24 }}>
-          <h2>Next Steps</h2>
-          <p style={{ color: '#666' }}>
-            No dermatologist assigned yet. Book a consultation slot to proceed.
-          </p>
+        <section style={{ marginBottom: 24, padding: 20, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+          <h2 style={{ marginTop: 0, color: '#991b1b' }}>No Dermatologist Assigned</h2>
+          <p style={{ color: '#991b1b', marginBottom: 16 }}>You need to book a consultation slot to proceed.</p>
           <Link
             href="/doctors"
             style={{
@@ -142,7 +192,6 @@ const { data: existingRating } = await supabase
               color: 'white',
               borderRadius: 6,
               textDecoration: 'none',
-              marginTop: 8,
             }}
           >
             Browse Dermatologists
@@ -150,48 +199,23 @@ const { data: existingRating } = await supabase
         </section>
       )}
 
-      {consultation.meeting_link && (
-        <section style={{ marginBottom: 24 }}>
-          <h2>Video Consultation</h2>
-          <p style={{ color: '#666', fontSize: 14 }}>
-            Your doctor has generated a meeting link for this consultation.
+      {consultation.doctor_id && (
+        <section style={{ marginTop: 40, marginBottom: 40 }}>
+          <h2>Communication</h2>
+          <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
+            Send a secure message to your dermatologist.
           </p>
-          <a
-            href={consultation.meeting_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: '#16a34a', // Green button
-              color: 'white',
-              borderRadius: 6,
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
-            Join Google Meet
-          </a>
+          <ConsultationChat 
+            consultationId={consultation.id} 
+            currentUserId={user.id} 
+          />
         </section>
       )}
-
-        {consultation.doctor_id && (
-  <section style={{ marginTop: 40 }}>
-    <h2>Communication</h2>
-    <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
-      Send a message to your dermatologist.
-    </p>
-    <ConsultationChat 
-      consultationId={consultation.id} 
-      currentUserId={user.id} 
-    />
-  </section>
-)}
 
       {prescription && (
         <section style={{ marginBottom: 24 }}>
           <h2>Prescription</h2>
-          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 6 }}>
+          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 6, border: '1px solid #bbf7d0' }}>
             <ul style={{ marginTop: 0 }}>
               {(prescription.medications as any[]).map((med, i) => (
                 <li key={i} style={{ marginBottom: 8 }}>
@@ -210,47 +234,57 @@ const { data: existingRating } = await supabase
           </div>
         </section>
       )}
+
       {consultation.status === 'completed' && consultation.doctor_id && (
-  <section style={{ marginTop: 32 }}>
-    {!existingRating ? (
-      <RatingForm
-        consultationId={consultation.id}
-        doctorId={consultation.doctor_id}
-        patientId={user.id}
-      />
-    ) : (
-      <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 8 }}>
-        <h3 style={{ marginTop: 0 }}>Your Rating</h3>
-        <div style={{ color: '#f59e0b', fontSize: 24 }}>
-          {'★'.repeat(existingRating.rating)}
-          <span style={{ color: '#d1d5db' }}>{'★'.repeat(5 - existingRating.rating)}</span>
-        </div>
-        {existingRating.review_text && (
-          <p style={{ margin: '8px 0 0', fontStyle: 'italic' }}>
-            "{existingRating.review_text}"
-          </p>
-        )}
-      </div>
-    )}
-  </section>
-)}
+        <section style={{ marginTop: 32 }}>
+          {!existingRating ? (
+            <RatingForm
+              consultationId={consultation.id}
+              doctorId={consultation.doctor_id}
+              patientId={user.id}
+            />
+          ) : (
+            <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 8 }}>
+              <h3 style={{ marginTop: 0 }}>Your Rating</h3>
+              <div style={{ color: '#f59e0b', fontSize: 24 }}>
+                {'★'.repeat(existingRating.rating)}
+                <span style={{ color: '#d1d5db' }}>{'★'.repeat(5 - existingRating.rating)}</span>
+              </div>
+              {existingRating.review_text && (
+                <p style={{ margin: '8px 0 0', fontStyle: 'italic' }}>
+                  "{existingRating.review_text}"
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
 
 function statusColor(status: string): string {
   switch (status) {
-    case 'pending':
-      return '#fef3c7';
-    case 'scheduled':
-      return '#dbeafe';
-    case 'in_progress':
-      return '#e0e7ff';
-    case 'completed':
-      return '#d1fae5';
-    case 'cancelled':
-      return '#fee2e2';
-    default:
-      return '#f3f4f6';
+    case 'pending': return '#fef3c7'; // Yellow
+    case 'pending_approval': return '#fef3c7'; // Yellow
+    case 'approved_awaiting_payment': return '#dbeafe'; // Blue
+    case 'scheduled': return '#d1fae5'; // Green
+    case 'in_progress': return '#e0e7ff'; // Indigo
+    case 'completed': return '#d1fae5'; // Green
+    case 'cancelled': return '#fee2e2'; // Red
+    default: return '#f3f4f6';
+  }
+}
+
+function formatStatus(status: string): string {
+  switch (status) {
+    case 'pending': return 'Pending';
+    case 'pending_approval': return 'Pending Doctor Approval';
+    case 'approved_awaiting_payment': return 'Approved - Awaiting Payment';
+    case 'scheduled': return 'Scheduled';
+    case 'in_progress': return 'In Progress';
+    case 'completed': return 'Completed';
+    case 'cancelled': return 'Cancelled';
+    default: return status;
   }
 }

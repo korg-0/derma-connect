@@ -26,6 +26,10 @@ export async function POST(req: Request) {
 
     const result = await sendEmail(to, subject, html);
 
+    if (!result) {
+      return NextResponse.json({ error: 'Email sending is not configured' }, { status: 503 });
+    }
+
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }

@@ -7,7 +7,7 @@ import SignOutButton from '@/components/auth/SignOutButton';
 export default function AdminSidebar() {
   const pathname = usePathname();
 
-  const links = [
+  const links: { name: string; href: string; icon?: string }[] = [
     { name: 'Verification Queue', href: '/admin/dashboard',  },
     { name: 'Doctors', href: '/admin/dashboard/doctors',  },
     { name: 'Patients', href: '/admin/dashboard/patients',  },

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import LegalConsent from '@/components/legal/LegalConsent';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -17,8 +18,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -35,20 +37,35 @@ export default function SignupPage() {
       },
     });
 
+    // 2. Check for errors FIRST
     if (signUpError) {
       setError(signUpError.message);
       setLoading(false);
       return;
     }
 
-    // 2. If email confirmation is enabled, they need to check their email
+    // 3. Log consent (only if user was created)
+    if (data.user) {
+      // We use upsert or ignore errors in case RLS blocks it before email confirmation
+      try {
+        await supabase.from('consent_log').insert([
+          { user_id: data.user.id, consent_type: 'terms_of_service', granted: true, version: '1.0' },
+          { user_id: data.user.id, consent_type: 'privacy_policy', granted: true, version: '1.0' }
+        ]);
+      } catch (err) {
+        console.error('Failed to log signup consent:', err);
+        // We don't return here because the user is still created
+      }
+    }
+
+    // 4. Handle email confirmation flow
     if (data.user && data.session === null) {
       setSuccess(true);
       setLoading(false);
       return;
     }
 
-    // 3. If auto-confirm is on, redirect to the appropriate dashboard
+    // 5. Handle auto-confirm flow (logged in immediately)
     if (data.session) {
       router.push(role === 'doctor' ? '/doctor/dashboard' : '/dashboard');
       router.refresh();
@@ -138,10 +155,12 @@ export default function SignupPage() {
               style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 6 }}
             />
           </div>
+          
+          <LegalConsent context="signup" onConsentChange={setConsentGiven} />
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !consentGiven}
             style={{ width: '100%', padding: '12px 0', background: '#0070f3', color: 'white', border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 500, cursor: loading ? 'wait' : 'pointer' }}
           >
             {loading ? 'Creating account...' : 'Sign Up'}

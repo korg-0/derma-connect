@@ -23,7 +23,7 @@ export default function Sidebar({ role }: { role: 'patient' | 'doctor' }) {
     { name: 'Availability', href: '/doctor/availability' },
   ];
 
-  const links = role === 'patient' ? patientLinks : doctorLinks;
+  const links: { name: string; href: string; icon?: string }[] = role === 'patient' ? patientLinks : doctorLinks;
 
   return (
     <aside style={{

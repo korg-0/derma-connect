@@ -28,6 +28,15 @@ export default async function CaseDetailPage({
 
   if (!consultation) notFound();
 
+// Insert audit log entry
+await supabase.from('audit_log').insert({
+  user_id: user.id, // The doctor
+  action: 'view_consultation',
+  resource_type: 'consultation',
+  resource_id: id,
+  ip_address: 'server-side', // You can get the IP from headers if needed
+});
+
   // Patient profile
   const { data: patient } = await supabase
     .from('profiles')
