@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireUser();
+    const user = await requireVerifiedDoctor();
     const { consultationId } = await req.json();
 
     const supabase = await createClient();

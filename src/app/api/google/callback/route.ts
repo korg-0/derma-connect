@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-  const user = await requireUser();
+  const user = await requireVerifiedDoctor();
   const code = request.nextUrl.searchParams.get('code');
 
   if (!code) {

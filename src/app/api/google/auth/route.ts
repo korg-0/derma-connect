@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 
 export async function GET() {
-  await requireUser(); // Must be logged in
+  await requireVerifiedDoctor();
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,

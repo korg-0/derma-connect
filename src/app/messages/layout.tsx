@@ -11,6 +11,9 @@ export default async function MessagesLayout({
   if (!user) redirect('/login');
   
   const profile = await getProfile(user.id);
+  if (profile?.role === 'doctor' && !profile.verified) {
+    redirect('/doctor/profile?verification=pending');
+  }
   const role = profile?.role === 'doctor' ? 'doctor' : 'patient';
 
   return (

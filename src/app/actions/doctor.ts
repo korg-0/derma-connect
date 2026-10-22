@@ -2,8 +2,11 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { requireVerifiedDoctor } from '@/lib/auth';
+import { requireUser } from '@/lib/auth';
 
 export async function cancelPrescription(prescriptionId: string, consultationId: string) {
+  await requireVerifiedDoctor();
   const supabase = await createClient();
   
   const { error } = await supabase
@@ -21,6 +24,7 @@ export async function cancelPrescription(prescriptionId: string, consultationId:
 }
 
 export async function cancelConsultation(consultationId: string) {
+  await requireVerifiedDoctor();
   const supabase = await createClient();
   
   // 1. Get the consultation to find the slot_id
@@ -54,6 +58,7 @@ export async function cancelConsultation(consultationId: string) {
   return { success: true };
 }
 export async function deleteDoctorSlot(slotId: string) {
+  await requireVerifiedDoctor();
   const supabase = await createClient();
   
   // First, verify the slot is not booked (safety check)
@@ -86,36 +91,42 @@ export async function rescheduleConsultation(
   oldSlotId: string,
   newSlotId: string
 ) {
+  const user = await requireUser();
   const supabase = await createClient();
 
-  // 1. Verify the new slot is actually available
+  // Patients may reschedule only their own consultation to another open slot
+  // belonging to the same currently verified doctor.
+  const { data: consultation } = await supabase
+    .from('consultations')
+    .select('doctor_id, patient_id, slot_id')
+    .eq('id', consultationId)
+    .eq('patient_id', user.id)
+    .single();
+
+  if (!consultation || consultation.slot_id !== oldSlotId || !consultation.doctor_id) {
+    return { success: false, error: 'Consultation not found or cannot be rescheduled.' };
+  }
+
+  // Verify the new slot is open and belongs to the same verified doctor.
   const { data: newSlot } = await supabase
     .from('doctor_slots')
     .select('is_booked, doctor_id')
     .eq('id', newSlotId)
+    .eq('doctor_id', consultation.doctor_id)
     .single();
 
   if (!newSlot || newSlot.is_booked) {
     return { success: false, error: 'The new slot is no longer available.' };
   }
 
-  // 2. Free up the old slot
-  await supabase
-    .from('doctor_slots')
-    .update({ is_booked: false })
-    .eq('id', oldSlotId);
-
-  // 3. Book the new slot
-  await supabase
-    .from('doctor_slots')
-    .update({ is_booked: true })
-    .eq('id', newSlotId);
-
-  // 4. Update the consultation to point to the new slot
+  // Changing the consultation slot is enough; only the verified doctor may
+  // accept the request and mark the slot as booked.
   const { error } = await supabase
     .from('consultations')
     .update({ slot_id: newSlotId })
-    .eq('id', consultationId);
+    .eq('id', consultationId)
+    .eq('patient_id', user.id)
+    .eq('slot_id', oldSlotId);
 
   if (error) {
     return { success: false, error: error.message };
@@ -130,6 +141,7 @@ export async function rescheduleConsultation(
 }
 
 export async function rejectConsultationRequest(consultationId: string, slotId: string) {
+  await requireVerifiedDoctor();
   const supabase = await createClient();
 
   // 1. Revert consultation to pending and remove doctor

@@ -1,29 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { anonymizePatientAccount } from '@/app/actions/patient';
+import { deleteOwnPatientAccount } from '@/app/actions/account';
 
-export default function DeleteAccountButton({ patientId }: { patientId: string }) {
-  const router = useRouter();
+export default function DeleteAccountButton() {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm('Are you absolutely sure? This will anonymize your profile and log you out.')) return;
+    if (!confirm('Permanently delete your patient account, profile, medical history, consultations, prescriptions, consent records, and uploaded consultation images? This cannot be undone.')) return;
     
     setLoading(true);
     
-    // 1. Anonymize the database record
-    const res = await anonymizePatientAccount(patientId);
-    
-    if (res.success) {
-      // 2. Sign out and redirect
-      await supabase.auth.signOut();
-      window.location.href = '/login';
-    } else {
-      alert(res.error);
+    try {
+      const res = await deleteOwnPatientAccount();
+      if (!res.success) {
+        alert(res.error);
+        setLoading(false);
+        return;
+      }
+
+      await supabase.auth.signOut({ scope: 'local' });
+      window.location.replace('/login?account_deleted=1');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Account deletion could not be completed.');
       setLoading(false);
     }
   };

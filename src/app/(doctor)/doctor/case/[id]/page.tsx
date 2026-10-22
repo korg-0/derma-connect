@@ -1,7 +1,7 @@
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import PrescriptionForm from '@/components/doctor/PrescriptionForm';
 import GenerateMeetLink from '@/components/doctor/GenerateMeetLink';
@@ -15,7 +15,7 @@ export default async function CaseDetailPage({
 }) {
 
   const { id } = await params;
-  const user = await requireUser();
+  const user = await requireVerifiedDoctor();
   const supabase = await createClient();
 
   // Fetch consultation — must belong to this doctor (RLS also enforces)

@@ -3,12 +3,12 @@ import DeleteSlotButton from '@/components/doctor/DeleteSlotButton';
 import ApproveRequestButton from '@/components/doctor/ApproveRequestButton';
 import RejectRequestButton from '@/components/doctor/RejectRequestButton';
 import Link from 'next/link';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import SlotManager from '@/components/doctor/SlotManager';
 
 export default async function AvailabilityPage() {
-  const user = await requireUser();
+  const user = await requireVerifiedDoctor();
   const supabase = await createClient();
 
   const today = new Date().toISOString().split('T')[0];

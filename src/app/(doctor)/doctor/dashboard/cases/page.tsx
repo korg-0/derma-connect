@@ -1,10 +1,10 @@
 
 import Link from 'next/link';
-import { requireUser } from '@/lib/auth';
+import { requireVerifiedDoctor } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function DoctorCasesPage() {
-  const user = await requireUser();
+  const user = await requireVerifiedDoctor();
   const supabase = await createClient();
 
   // Fetch consultations assigned to this doctor

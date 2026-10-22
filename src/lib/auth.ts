@@ -19,6 +19,14 @@ export async function requireUser() {
   return user;
 }
 
+export async function requireVerifiedDoctor() {
+  const user = await requireUser();
+  const profile = await getProfile(user.id);
+  if (profile?.role !== 'doctor') redirect('/dashboard');
+  if (!profile.verified) redirect('/doctor/profile?verification=pending');
+  return user;
+}
+
 export async function getProfile(userId: string) {
   const supabase = await createClient();
   const { data } = await supabase

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import SignOutButton from '@/components/auth/SignOutButton';
 
-export default function Sidebar({ role }: { role: 'patient' | 'doctor' }) {
+export default function Sidebar({ role, verified = true }: { role: 'patient' | 'doctor'; verified?: boolean }) {
   const pathname = usePathname();
 
   const patientLinks = [
@@ -23,7 +23,9 @@ export default function Sidebar({ role }: { role: 'patient' | 'doctor' }) {
     { name: 'Availability', href: '/doctor/availability' },
   ];
 
-  const links: { name: string; href: string; icon?: string }[] = role === 'patient' ? patientLinks : doctorLinks;
+  const links: { name: string; href: string; icon?: string }[] = role === 'patient'
+    ? patientLinks
+    : verified ? doctorLinks : [{ name: 'My Profile', href: '/doctor/profile' }];
 
   return (
     <aside style={{
