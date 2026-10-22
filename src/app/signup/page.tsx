@@ -18,6 +18,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
 
     const handleSignup = async (e: React.FormEvent) => {
@@ -76,12 +78,33 @@ export default function SignupPage() {
     }
   };
 
+  const handleResend = async () => {
+    setResending(true);
+    setResendMessage(null);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: new URL(
+          `/auth/callback?next=${encodeURIComponent(role === 'doctor' ? '/doctor/dashboard' : '/dashboard')}`,
+          window.location.origin
+        ).toString(),
+      },
+    });
+    setResendMessage(error ? error.message : 'If this address has a pending account, a new confirmation link has been sent.');
+    setResending(false);
+  };
+
   if (success) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa' }}>
         <div style={{ maxWidth: 400, padding: 40, background: 'white', borderRadius: 12, textAlign: 'center', border: '1px solid #e5e7eb' }}>
           <h2 style={{ marginTop: 0 }}>Check your email</h2>
           <p style={{ color: '#666' }}>We've sent a confirmation link to <strong>{email}</strong>. Click the link to activate your account and sign in.</p>
+          <button type="button" onClick={handleResend} disabled={resending} style={{ padding: '10px 16px', marginTop: 8 }}>
+            {resending ? 'Sending...' : 'Resend confirmation email'}
+          </button>
+          {resendMessage && <p role="status" style={{ color: resendMessage.includes('error') ? 'red' : '#166534', marginTop: 12 }}>{resendMessage}</p>}
           <Link href="/login" style={{ color: '#0070f3', marginTop: 16, display: 'inline-block' }}>Back to Login</Link>
         </div>
       </div>

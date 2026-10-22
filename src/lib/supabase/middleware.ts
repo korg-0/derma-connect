@@ -35,7 +35,22 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     path.startsWith('/dashboard') ||
     path.startsWith('/consult') ||
-    path.startsWith('/doctors');
+    path.startsWith('/doctors') ||
+    path.startsWith('/doctor') ||
+    path.startsWith('/messages') ||
+    path.startsWith('/profile');
+
+  if (user && !user.email_confirmed_at) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('error', 'email_not_confirmed');
+    const redirect = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      redirect.cookies.set(name, value, options);
+    });
+    return redirect;
+  }
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
