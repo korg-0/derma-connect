@@ -30,6 +30,10 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        emailRedirectTo: new URL(
+          `/auth/callback?next=${encodeURIComponent(role === 'doctor' ? '/doctor/dashboard' : '/dashboard')}`,
+          window.location.origin
+        ).toString(),
         data: {
           full_name: fullName,
           role: role,
