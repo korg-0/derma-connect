@@ -8,8 +8,8 @@ import { useEffect } from 'react';
 export default function LoginForm() {
   const router = useRouter();
   const supabase = createClient();
-  const [email, setEmail] = useState('patient@test.com');
-  const [password, setPassword] = useState('TestPass123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
